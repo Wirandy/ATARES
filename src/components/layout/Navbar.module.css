@@ -1,0 +1,78 @@
+.navbar {
+    height: 68px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    background: transparent;
+    border-bottom: none;
+    position: absolute;
+    top: 10;
+    z-index: 50;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: mintcream;
+    letter-spacing: -0.02em;
+}
+
+.navLinks {
+    display: flex;
+    margin-left: 16rem;
+    gap: 1rem;
+    padding: 1rem 4rem;
+    border-radius: 30px;
+    background-color: rgba(255, 255, 255, 0.237);
+}
+
+.link {
+    color: rgb(255, 255, 255);
+    font-size: 1rem;
+    position: relative;
+    display: inline-block;
+    padding: 0.1rem 1.5rem;
+    border-radius: 50px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+}
+
+.link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 30px;
+    transform: scale(0);
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: -1;
+}
+
+.link:hover::after {
+
+    transform: scale(2.5);
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.button {
+    background-color: rgba(255, 255, 255, 0.237);
+    color: rgb(255, 247, 247);
+    border: 1px solid rgb(255, 254, 254);
+    padding: 0.7rem 3rem;
+    border-radius: 30px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+    outline: none;
+}
+
+.button:hover {
+    background-color: rgba(34, 66, 181, 0.445);
+}

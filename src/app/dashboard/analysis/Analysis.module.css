@@ -1,0 +1,364 @@
+.container {
+    width: 100vw;
+    min-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    padding-top: 80px;
+}
+
+/* Ripple animations */
+.rippleBase {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.centerRipple {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: rippleExpand 4s linear infinite;
+}
+
+.cornerRipple1 {
+    top: 0;
+    left: 0;
+    transform: translate(-50%, -50%);
+    animation: rippleExpand 5s linear infinite;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.cornerRipple2 {
+    bottom: 0;
+    right: 0;
+    transform: translate(50%, 50%);
+    animation: rippleExpand 6s linear infinite;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+@keyframes rippleExpand {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 0.6;
+        border-width: 2px;
+    }
+
+    100% {
+        width: 150vmax;
+        height: 150vmax;
+        opacity: 0;
+        border-width: 0px;
+    }
+}
+
+.header {
+    text-align: center;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 10;
+    color: white;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+/* Split Screen Layout */
+.gridContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1400px;
+    padding: 0 2rem 2rem;
+    height: calc(100vh - 200px);
+    min-height: 600px;
+}
+
+.leftColumn {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Camera Section Styles */
+.cameraSection {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: white;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.icon {
+    font-size: 1.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.videoContainer {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.videoFeed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    /* Mirror effect */
+}
+
+.faceGuide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    height: 380px;
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    border-radius: 50% 50% 45% 45%;
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.2);
+}
+
+.cameraError {
+    color: white;
+    text-align: center;
+    padding: 2rem;
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.controls button {
+    flex: 1;
+}
+
+/* Processing & Result States */
+.processingState,
+.resultState {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: white;
+    text-align: center;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.previewImage,
+.resultImage {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 0.75rem;
+    margin-top: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.resultState {
+    position: relative;
+}
+
+.resultOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.resultActions {
+    margin-top: 2rem;
+    width: 100%;
+}
+
+/* Chat Section Styles */
+.chatSection {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: white;
+}
+
+.subHeader {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.messagesContainer {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.message {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 80%;
+}
+
+.userMessage {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.botMessage {
+    align-self: flex-start;
+}
+
+.botIcon {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.messageContent {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.userMessage .messageContent {
+    background: var(--primary-color);
+    border-bottom-right-radius: 0.25rem;
+}
+
+.botMessage .messageContent {
+    border-top-left-radius: 0.25rem;
+}
+
+.inputArea {
+    display: flex;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+}
+
+.chatInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    outline: none;
+}
+
+.chatInput::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sendButton {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 0.5rem;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.sendButton:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 1024px) {
+    .gridContainer {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .cameraSection,
+    .chatSection,
+    .processingState,
+    .resultState {
+        height: 600px;
+    }
+}
