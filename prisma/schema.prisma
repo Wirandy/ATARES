@@ -1,14 +1,76 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+// [1] Konfigurasi Provider Database
+// Kita menggunakan PostgreSQL sesuai pilihan Anda.
+datasource db {
+  provider = "postgresql" 
+  url      = env("DATABASE_URL")
 }
 
-datasource db {
-  provider = "postgresql"
+// Alat untuk menghasilkan kode klien (Prisma Client)
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Enum untuk Status Analisis, sesuai AnalysisResult.status di frontend
+enum AnalysisStatus {
+  PENDING    // Belum diproses atau menunggu antrian AI/Expert System
+  PROCESSING // Sedang diproses oleh AI/Expert System
+  COMPLETED  // Selesai, siap ditampilkan ke pengguna
+  FAILED     // Gagal diproses
+}
+
+// --------------------------------------------------------------------
+// [2] Model User (Tabel Pengguna)
+// Digunakan untuk otentikasi (Login/Register) dan profil.
+// --------------------------------------------------------------------
+model User {
+  id            String    @id @default(cuid()) // ID unik, otomatis dibuat oleh CUID
+  name          String
+  email         String    @unique               // Harus unik, digunakan sebagai username
+  passwordHash  String    // Wajib di-hash menggunakan bcrypt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relasi: User memiliki riwayat Analisis dan Sesi Chat
+  analyses      Analysis[]    
+  chatSessions  ChatSession[] 
+}
+
+// --------------------------------------------------------------------
+// [3] Model Analysis (Tabel Hasil Analisis Kulit)
+// Menyimpan hasil dari Face Detection (AI) dan Expert System.
+// --------------------------------------------------------------------
+model Analysis {
+  id            String         @id @default(cuid())
+  userId        String         // Foreign Key ke tabel User
+  user          User           @relation(fields: [userId], references: [id])
+  
+  status        AnalysisStatus @default(PENDING) // Status saat ini (menunggu, selesai, dll.)
+  imageUrl      String         // URL gambar yang diupload
+  
+  // Deteksi dan Rekomendasi
+  // Tipe 'Json?' adalah fitur PostgreSQL yang kuat untuk menyimpan data terstruktur (object/array)
+  detections    Json?          // Contoh: { spot_count: 5, wrinkle_severity: 'medium' }
+  recommendations Json?        // Contoh: { products: [...], steps: [...] }
+  
+  // Metrik Ringkasan (untuk tampilan History di frontend)
+  skinScore     Int?           
+  skinType      String?        
+  metrics       Json?          // { health, hydration, texture }
+  
+  createdAt     DateTime       @default(now())
+  completedAt   DateTime?
+}
+
+// --------------------------------------------------------------------
+// [4] Model Chat Session (Tabel Riwayat Chatbot)
+// Menyimpan riwayat percakapan pengguna dengan chatbot.
+// --------------------------------------------------------------------
+model ChatSession {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  
+  messages      Json      // Array of chat messages
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

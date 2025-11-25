@@ -21,24 +21,23 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            // In a real app, we would call the API
-            // const response = await authService.register(formData);
-            // login(response.user, response.token);
-
-            // MOCK REGISTER
-            console.log('Registering with:', formData);
-            setTimeout(() => {
-                login(
-                    { id: '1', name: formData.name, email: formData.email },
-                    'mock-jwt-token'
-                );
-                router.push('/dashboard');
-            }, 1000);
+            // --- KODE LAMA (MOCK) DIHAPUS, DIGANTI DENGAN KODE BARU ---
+            
+            // 1. Panggil API Register yang baru Anda buat
+            const response = await authService.register(formData); //
+            
+            // 2. Jika sukses (status 201), simpan token dan user ke Zustand Store
+            login(response.user); // menghapus response.token dari sini karena token diatur oleh HTTP-only cookie
+            
+            // 3. Arahkan ke Dashboard
+            router.push('/dashboard'); 
 
         } catch (err: any) {
+            // Tangani error dari backend (misalnya 409 Email sudah terdaftar)
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
-            setLoading(false);
-        }
+            setLoading(false); 
+        } 
+        // Note: Tidak perlu finally, karena loading=true direset di catch atau saat redirect.
     };
 
     return (

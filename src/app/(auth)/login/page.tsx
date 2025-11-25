@@ -21,25 +21,23 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            // In a real app, we would call the API
-            // const response = await authService.login(formData);
-            // login(response.user, response.token);
-
-            // MOCK LOGIN for development if backend is not ready
-            console.log('Logging in with:', formData);
-            setTimeout(() => {
-                login(
-                    { id: '1', name: 'Test User', email: formData.email },
-                    'mock-jwt-token'
-                );
-                router.push('/dashboard');
-            }, 1000);
+            // --- KODE LAMA (MOCK) DIHAPUS, DIGANTI DENGAN KODE BARU ---
+            
+            // 1. Panggil API Login yang baru Anda buat
+            const response = await authService.login(formData); //
+            
+            // 2. Jika sukses (status 200), simpan token dan user ke Zustand Store
+            login(response.user); // menghapus response.token dari sini karena token diatur oleh HTTP-only cookie
+            
+            // 3. Arahkan ke Dashboard
+            router.push('/dashboard'); 
 
         } catch (err: any) {
+            // Tangani error dari backend (misalnya 401 Kredensial tidak valid)
             setError(err.response?.data?.message || 'Login failed. Please try again.');
-        } finally {
-            // setLoading(false); // Keep loading until redirect in mock
-        }
+            setLoading(false); 
+        } 
+        // Note: Bagian finally (jika ada) di file original harus tetap dipertahankan.
     };
 
     return (

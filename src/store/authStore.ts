@@ -5,7 +5,7 @@ interface AuthState {
     user: User | null;
     token: string | null;
     isAuthenticated: boolean;
-    login: (user: User, token: string) => void;
+    login: (user: User) => void; // hapus parameter token
     logout: () => void;
 }
 
@@ -13,12 +13,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     token: null,
     isAuthenticated: false,
-    login: (user, token) => {
-        localStorage.setItem('token', token);
-        set({ user, token, isAuthenticated: true });
+    login: (user) => {
+        set({ user, isAuthenticated: true }); // hapus localStorage.setItem('token', token); karena token diurus oleh HTTP-only cookie
     },
     logout: () => {
-        localStorage.removeItem('token');
+        fetch('/api/logout', { method: 'POST' }); // hapus token dari HTTP-only cookie -> Panggil API logout yang akan menghapus cookie di server
         set({ user: null, token: null, isAuthenticated: false });
     },
 }));
