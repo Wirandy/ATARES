@@ -3,13 +3,20 @@
 import { useAuthStore } from '@/store/authStore';
 import styles from './Profile.module.css';
 import { useRouter } from 'next/navigation';
+import { authService } from '@/services/authService'; // <-- [BARIS INI DITAMBAH]
 
 export default function ProfilePage() {
     const { user, logout } = useAuthStore();
     const router = useRouter();
 
-    const handleLogout = () => {
+    const handleLogout = async () => { // <-- [PERUBAHAN: JADIKAN ASYNC]
+        // [PERUBAHAN] Panggil API Logout untuk menghapus cookie di server
+        await authService.logoutApi();
+
+        // Hapus state user di frontend
         logout();
+
+        // Redirect
         router.push('/login');
     };
 

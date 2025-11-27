@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma'; // Akses konektor yang baru dibuat
 import { RegisterCredentials } from '@/types/auth'; // Tipe dari frontend
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose'; // <-- PERUBAHAN: Import dari jose
 
 export async function POST(request: Request) {
     try {
@@ -29,15 +29,16 @@ export async function POST(request: Request) {
             select: { id: true, name: true, email: true }
         });
 
-        // Buat JWT Token
-        const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-development'; 
-        const token = jwt.sign(
-            { userId: newUser.id },
-            JWT_SECRET,
-            { expiresIn: '7d' } 
-        );
+        // 6. Buat JWT Token (Ganti Logika JWT)
+        const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-development');
 
-        // Kirim Respons Sukses (AuthResponse)
+        const token = await new SignJWT({ userId: newUser.id })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('7d')
+            .sign(JWT_SECRET);
+
+        // 7. Kirim Respons Sukses (AuthResponse)
         return NextResponse.json({ 
             token, 
             user: { id: newUser.id, name: newUser.name, email: newUser.email } 

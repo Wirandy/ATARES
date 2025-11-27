@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma'; // Akses konektor
 import { LoginCredentials } from '@/types/auth'; // Tipe data Login
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose'; // <-- PERUBAHAN: Import dari jose
 
 export async function POST(request: Request) {
     try {
@@ -35,15 +35,16 @@ export async function POST(request: Request) {
         // Hapus passwordHash dari objek user untuk respons
         const { passwordHash, ...userWithoutHash } = user;
         
-        // Buat JWT Token
-        const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-development'; 
-        const token = jwt.sign(
-            { userId: user.id },
-            JWT_SECRET,
-            { expiresIn: '7d' } 
-        );
+        // 6. Buat JWT Token (Ganti Logika JWT)
+        const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-development');
+        
+        const token = await new SignJWT({ userId: user.id })
+            .setProtectedHeader({ alg: 'HS256' }) // Algoritma yang digunakan
+            .setIssuedAt()
+            .setExpirationTime('7d') // Token berlaku 7 hari
+            .sign(JWT_SECRET); // Sign token dengan secret
 
-        // Kirim Respons Sukses (AuthResponse)
+        // 7. Kirim Respons Sukses (AuthResponse)
         return NextResponse.json({ 
             token, 
             user: userWithoutHash 

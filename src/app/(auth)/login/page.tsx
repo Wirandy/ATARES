@@ -21,23 +21,18 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            // --- KODE LAMA (MOCK) DIHAPUS, DIGANTI DENGAN KODE BARU ---
-            
-            // 1. Panggil API Login yang baru Anda buat
-            const response = await authService.login(formData); //
-            
-            // 2. Jika sukses (status 200), simpan token dan user ke Zustand Store
-            login(response.user); // menghapus response.token dari sini karena token diatur oleh HTTP-only cookie
-            
-            // 3. Arahkan ke Dashboard
-            router.push('/dashboard'); 
+            const response = await authService.login(formData);
+            await authService.setTokenCookie(response.token);
+            login(response.user);
+
+            router.replace('/dashboard'); 
 
         } catch (err: any) {
-            // Tangani error dari backend (misalnya 401 Kredensial tidak valid)
+            // HANYA dipanggil jika Login GAGAL
             setError(err.response?.data?.message || 'Login failed. Please try again.');
-            setLoading(false); 
-        } 
-        // Note: Bagian finally (jika ada) di file original harus tetap dipertahankan.
+            setLoading(false); // <-- RESET LOADING HANYA DI SINI
+        }
+        // JANGAN ADA BLOK FINALLY DI SINI
     };
 
     return (

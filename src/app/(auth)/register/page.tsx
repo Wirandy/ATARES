@@ -21,23 +21,21 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            // --- KODE LAMA (MOCK) DIHAPUS, DIGANTI DENGAN KODE BARU ---
-            
-            // 1. Panggil API Register yang baru Anda buat
-            const response = await authService.register(formData); //
-            
-            // 2. Jika sukses (status 201), simpan token dan user ke Zustand Store
-            login(response.user); // menghapus response.token dari sini karena token diatur oleh HTTP-only cookie
-            
-            // 3. Arahkan ke Dashboard
-            router.push('/dashboard'); 
+            const response = await authService.register(formData);
+            await authService.setTokenCookie(response.token);
+            login(response.user);
+
+            // Arahkan ke Dashboard
+            router.push('/dashboard');
+            // CATATAN: Karena ini sukses, setLoading(false) tidak dipanggil
+            // karena komponen akan di-unmount/dibuang oleh router.push
 
         } catch (err: any) {
-            // Tangani error dari backend (misalnya 409 Email sudah terdaftar)
+            // HANYA dipanggil jika Register GAGAL
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
-            setLoading(false); 
+            setLoading(false); // <-- RESET LOADING HANYA DI SINI
         } 
-        // Note: Tidak perlu finally, karena loading=true direset di catch atau saat redirect.
+        // [PERBAIKAN]: BLOK 'finally' DIHAPUS TOTAL
     };
 
     return (

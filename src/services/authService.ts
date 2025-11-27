@@ -1,15 +1,22 @@
-import api from './api';
-import { LoginCredentials, RegisterCredentials, AuthResponse } from '@/types/auth';
+// File: src/services/authService.ts
 
-const setTokenCookie = async (token: string) => { // Fungsi baru yang memanggil API /api/set-cookie (Langkah 2 Fase 4)
-    await api.post('/set-cookie', { token }); // API akan menyimpan token ke HTTP-only cookie
+import api from './api';
+import { LoginCredentials, RegisterCredentials, AuthResponse } from '@/types/auth'; //
+
+// [FUNGSI BARU]: Memanggil Route Handler /api/set-cookie
+const setTokenCookie = async (token: string) => {
+    // Route Handler yang Anda buat akan menyimpan token di HTTP-only cookie
+    await api.post('/set-cookie', { token });
 };
 
-const logoutApi = async () => { // Fungsi baru yang memanggil API /api/auth/logout (Langkah 3 Fase 4)
-    await api.post('/auth/logout'); // API akan menghapus cookie token
+// [FUNGSI BARU]: Memanggil Route Handler /api/auth/logout
+const logoutApi = async () => {
+    // Route Handler yang Anda buat akan menghapus cookie JWT
+    await api.post('/auth/logout');
 };
 
 export const authService = {
+    // Fungsi login/register tetap sama
     login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
         const response = await api.post<AuthResponse>('/auth/login', credentials);
         return response.data;
@@ -20,11 +27,12 @@ export const authService = {
         return response.data;
     },
 
-    setTokenCookie,  
+    // [PERUBAHAN]: Ekspor fungsi-fungsi baru
+    setTokenCookie,
     logoutApi,
 
-    // Ganti fungsi logout lama dengan peringatan/deprecate
-    logout: () => { 
-        console.warn('Fungsi logout lama tidak digunakan lagi. Gunakan logoutApi() dan useAuthStore().logout().');
+    // Fungsi logout lama, biarkan saja
+    logout: () => {
+        console.warn('Fungsi logout lama sudah dideprecate.');
     }
 };
