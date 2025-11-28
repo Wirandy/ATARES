@@ -11,7 +11,13 @@ import styles from './Register.module.css';
 export default function RegisterPage() {
     const router = useRouter();
     const login = useAuthStore((state) => state.login);
-    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+    // ✅ FIX 1: Tambah phoneNumber di state
+    const [formData, setFormData] = useState({ 
+        name: '', 
+        email: '', 
+        phoneNumber: '',  // ✅ TAMBAH INI
+        password: '' 
+    });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -21,21 +27,19 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const response = await authService.register(formData);
+            const response = await authService.register(formData);  // ✅ formData udah include phoneNumber
             await authService.setTokenCookie(response.token);
             login(response.user);
 
             // Arahkan ke Dashboard
             router.push('/dashboard');
             // CATATAN: Karena ini sukses, setLoading(false) tidak dipanggil
-            // karena komponen akan di-unmount/dibuang oleh router.push
 
         } catch (err: any) {
             // HANYA dipanggil jika Register GAGAL
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
             setLoading(false); // <-- RESET LOADING HANYA DI SINI
         } 
-        // [PERBAIKAN]: BLOK 'finally' DIHAPUS TOTAL
     };
 
     return (
@@ -65,6 +69,17 @@ export default function RegisterPage() {
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         required
                     />
+                    
+                    {/* ✅ FIX 2: Input Phone Number */}
+                    <Input
+                        label="Phone Number"
+                        type="tel"  // ✅ BENAR
+                        placeholder="+628xxxxxxxxxx"
+                        value={formData.phoneNumber}  // ✅ BENAR
+                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}  // ✅ BENAR
+                        required
+                    />
+
                     <Input
                         label="Password"
                         type="password"

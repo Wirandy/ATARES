@@ -26,6 +26,7 @@ model User {
   id            String    @id @default(cuid()) // ID unik, otomatis dibuat oleh CUID
   name          String
   email         String    @unique               // Harus unik, digunakan sebagai username
+  phoneNumber   String    @unique
   passwordHash  String    // Wajib di-hash menggunakan bcrypt
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

@@ -15,7 +15,8 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials {
-    name: string;
-    email: string;
-    password: string;
+  name: string;
+  email: string;
+  phoneNumber: string;  // ✅ TAMBAH INI
+  password: string;
 }
