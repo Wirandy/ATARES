@@ -17,10 +17,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Setup CORS
+# <-- TAMBAHKAN BLOK INI SETELAH app = FastAPI()
+origins = [
+    "http://localhost:3000",  # Domain Next.js Anda
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+# END TAMBAH BLOK CORS
 
 # Load Model YOLO
 path_model = 'runs/detect/train2/weights/best.pt'

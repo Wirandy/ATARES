@@ -10,7 +10,24 @@ interface Message {
     timestamp: Date;
 }
 
-export default function ChatSection() {
+interface Advice {
+  type: string;
+  treatment: string;
+  advice: string;
+}
+
+interface AnalysisResultType {
+  image_result: string;
+  counts: Record<string, number>;
+  expert_advice: Advice[];
+}
+
+// Definisikan Props untuk komponen ChatSection
+interface ChatSectionProps {
+  analysisResult: AnalysisResultType | null;
+}
+
+export default function ChatSection({ analysisResult }: ChatSectionProps) {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
@@ -30,8 +47,52 @@ export default function ChatSection() {
         scrollToBottom();
     }, [messages]);
 
+    useEffect(() => {
+    if (analysisResult) {
+        let summaryText = "**Analysis Complete!** Here are the findings:\n\n";
+
+        // 1. Ringkasan Deteksi
+        const detectedIssues = Object.entries(analysisResult.counts)
+            .filter(([_, count]) => count > 0)
+            .map(([issue, count]) => `${issue} (${count})`);
+        
+        summaryText += `**Detected:** ${detectedIssues.join(', ') || 'No major issues detected.'}\n\n`;
+
+        // 2. Tambahkan Saran Ahli (Expert Advice) - PASTIKAN BLOK INI ADA
+        if (analysisResult.expert_advice && analysisResult.expert_advice.length > 0) {
+            analysisResult.expert_advice.forEach((advice, index) => {
+                summaryText += `--- **Expert Advice for ${advice.type}** ---\n`;
+                summaryText += `**Treatment:** ${advice.treatment}\n`;
+                summaryText += `**Advice:** ${advice.advice}\n\n`;
+            });
+        } else {
+            summaryText += "No specific expert advice available for the detected conditions.\n\n";
+        }
+        
+        // Buat pesan bot baru
+        const resultMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: summaryText, // <-- INI YANG AKAN MENAMPILKAN RINGKASAN DAN SARAN
+            sender: 'bot',
+            timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, resultMessage]);
+    }
+}, [analysisResult]);
+
     const handleSend = () => {
         if (!input.trim()) return;
+
+        setTimeout(() => {
+        const botResponse: Message = {
+            id: (Date.now() + 1).toString(),
+            text: "Saat ini, saya hanya dapat menganalisis hasil kulit Anda. Silakan coba upload gambar!",
+            sender: 'bot',
+            timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botResponse]);
+        }, 500);
 
         const newMessage: Message = {
             id: Date.now().toString(),
@@ -42,17 +103,6 @@ export default function ChatSection() {
 
         setMessages(prev => [...prev, newMessage]);
         setInput('');
-
-        // Mock bot response
-        setTimeout(() => {
-            const botResponse: Message = {
-                id: (Date.now() + 1).toString(),
-                text: "I'm currently in demo mode. Once the analysis is complete, I can give you specific advice!",
-                sender: 'bot',
-                timestamp: new Date()
-            };
-            setMessages(prev => [...prev, botResponse]);
-        }, 1000);
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {

@@ -11,11 +11,12 @@ import styles from './Register.module.css';
 export default function RegisterPage() {
     const router = useRouter();
     const login = useAuthStore((state) => state.login);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phoneNumber: '',
-        password: ''
+    // ✅ FIX 1: Tambah phoneNumber di state
+    const [formData, setFormData] = useState({ 
+        name: '', 
+        email: '', 
+        phoneNumber: '',  // ✅ TAMBAH INI
+        password: '' 
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -26,25 +27,23 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const response = await authService.register(formData);
+            const response = await authService.register(formData);  // ✅ formData udah include phoneNumber
             await authService.setTokenCookie(response.token);
             login(response.user);
 
+            // Arahkan ke Dashboard
             router.push('/dashboard');
+            // CATATAN: Karena ini sukses, setLoading(false) tidak dipanggil
 
         } catch (err: any) {
+            // HANYA dipanggil jika Register GAGAL
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
-            setLoading(false);
-        }
+            setLoading(false); // <-- RESET LOADING HANYA DI SINI
+        } 
     };
 
     return (
         <div className={styles.container}>
-            {/* Ripple Elements */}
-            <div className={`${styles.rippleBase} ${styles.centerRipple}`}></div>
-            <div className={`${styles.rippleBase} ${styles.cornerRipple1}`}></div>
-            <div className={`${styles.rippleBase} ${styles.cornerRipple2}`}></div>
-
             <div className={`glass-panel ${styles.card}`}>
                 <div className={styles.header}>
                     <h1 className={styles.title}>Create Account</h1>
@@ -70,13 +69,14 @@ export default function RegisterPage() {
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         required
                     />
-
+                    
+                    {/* ✅ FIX 2: Input Phone Number */}
                     <Input
                         label="Phone Number"
-                        type="tel"
+                        type="tel"  // ✅ BENAR
                         placeholder="+628xxxxxxxxxx"
-                        value={formData.phoneNumber}
-                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                        value={formData.phoneNumber}  // ✅ BENAR
+                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}  // ✅ BENAR
                         required
                     />
 

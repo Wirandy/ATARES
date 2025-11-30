@@ -1,14 +1,106 @@
-// File: src/app/api/auth/login/route.ts
+// File: src/app/api/auth/login/route.ts (FINAL MODIFIED VERSION)
 
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import prisma from '@/lib/prisma'; // Akses konektor
-import { LoginCredentials } from '@/types/auth'; // Tipe data Login
-import { SignJWT } from 'jose'; // <-- PERUBAHAN: Import dari jose
+import prisma from '@/lib/prisma';
+import { LoginCredentials } from '@/types/auth';
+import { SignJWT } from 'jose'; 
+import { cookies } from 'next/headers'; // <-- WAJIB: Untuk membaca token saat Analysis
 
 export async function POST(request: Request) {
+    
+    // 1. Ambil body sebagai TEXT untuk menghindari 'stream already consumed'
+    // Kloning request untuk memastikan body stream bisa dibaca ulang
+    const requestClone = request.clone(); 
+    const contentType = request.headers.get('content-type');
+
+    let action: string | null = null;
+    let requestBody: any;
+    
+    // --- PENANGANAN BODY DINAMIS ---
+    
+    // A) Jika permintaan adalah File Upload (Analysis):
+    if (contentType?.includes('multipart/form-data')) {
+        try {
+            const formData = await request.formData();
+            action = formData.get('action') as string | null;
+            requestBody = formData;
+        } catch (e) {
+            // Jika gagal parse FormData, ini adalah error 
+            console.error("Error parsing FormData:", e);
+            return NextResponse.json({ message: 'Error processing file upload.' }, { status: 400 });
+        }
+    } 
+    // B) Jika permintaan adalah JSON (Login, Register, dll.):
+    else {
+        try {
+            const requestText = await requestClone.text();
+            if (requestText) {
+                requestBody = JSON.parse(requestText);
+                action = requestBody.action || 'login'; // Asumsi default adalah 'login'
+            } else {
+                 return NextResponse.json({ message: 'Empty request body.' }, { status: 400 });
+            }
+        } catch (e) {
+            // Jika gagal parse JSON
+            console.error("Error parsing JSON:", e);
+            return NextResponse.json({ message: 'Invalid request body format.' }, { status: 400 });
+        }
+    }
+
+
+    // --- 2. HANDLER AI ANALYSIS (Prioritas Tinggi) ---
+    if (action === 'analysis' && requestBody instanceof FormData) { 
+        
+        // Dapatkan store cookies, paksa TypeScript untuk menganggapnya sebagai 'any'
+        const cookieStore = (await cookies()) as any;
+        
+        // Akses method .get() dari objek yang sudah di-unwrap
+        const token = cookieStore.get('token')?.value || cookieStore.get('authToken')?.value;    
+        if (!token) return NextResponse.json({error: 'Unauthorized. Token not found.'}, {status: 401});
+
+        // Cek File
+        const file = requestBody.get('image') as File | null;
+        if (!file) return NextResponse.json({error: 'No image provided for analysis'}, {status: 400});
+        
+        // Panggil Python AI (FastAPI di port 8000)
+        const aiForm = new FormData();
+        aiForm.append('file', file); // <-- PERBAIKAN: Mengirim field sebagai 'file'
+        
+        try {
+            const aiResponse = await fetch('http://localhost:8000/detect', { 
+                method: 'POST',
+                body: aiForm,
+            });
+
+            if (!aiResponse.ok) {
+                // Jika server AI memberikan error
+                const errorText = await aiResponse.text();
+                console.error("AI Service Error:", errorText);
+                return NextResponse.json({error: `AI service returned status ${aiResponse.status}`}, {status: 500});
+            }
+
+            const aiResult = await aiResponse.json();
+            return NextResponse.json(aiResult);
+            
+        } catch (e) {
+            // Error jika tidak bisa terhubung ke port 8000
+            console.error("Fetch Error:", e);
+            return NextResponse.json({error: 'Could not connect to AI service (port 8000).'}, {status: 503});
+        }
+    }
+    
+    // --- 3. HANDLER LOGIN (Logika Orisinal Anda) ---
+
+    // Jika action bukan 'login', atau formatnya tidak sesuai yang diharapkan untuk login, tolak.
+    if (action !== 'login') {
+        return NextResponse.json({ message: 'Unknown action or request type.' }, { status: 400 });
+    }
+    
+    // Lanjutkan dengan logika Login orisinal Anda:
     try {
-        const body: LoginCredentials = await request.json();
+        // requestBody adalah hasil parse JSON dari requestText
+        const body: LoginCredentials = requestBody; 
         const { email, password } = body;
 
         if (!email || !password) {
@@ -35,23 +127,23 @@ export async function POST(request: Request) {
         // Hapus passwordHash dari objek user untuk respons
         const { passwordHash, ...userWithoutHash } = user;
         
-        // 6. Buat JWT Token (Ganti Logika JWT)
+        // 6. Buat JWT Token
         const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-development');
         
         const token = await new SignJWT({ userId: user.id })
-            .setProtectedHeader({ alg: 'HS256' }) // Algoritma yang digunakan
+            .setProtectedHeader({ alg: 'HS256' })
             .setIssuedAt()
-            .setExpirationTime('7d') // Token berlaku 7 hari
-            .sign(JWT_SECRET); // Sign token dengan secret
+            .setExpirationTime('7d')
+            .sign(JWT_SECRET);
 
         // 7. Kirim Respons Sukses (AuthResponse)
-        return NextResponse.json({ 
-            token, 
-            user: userWithoutHash 
+        return NextResponse.json({
+            token,
+            user: userWithoutHash
         }, { status: 200 });
 
     } catch (error) {
-        console.error(error);
+        console.error("Login Handler Error (Orisinal):", error);
         return NextResponse.json({ message: 'Login gagal. Server error.' }, { status: 500 });
     }
 }
