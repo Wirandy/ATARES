@@ -34,7 +34,6 @@ export default function AnalysisPage() {
 
     return (
         <div className={styles.container}>
-            {/* Ripple animations */}
             <div className={`${styles.rippleBase} ${styles.centerRipple}`} style={{ animationDelay: '0s' }}></div>
             <div className={`${styles.rippleBase} ${styles.centerRipple}`} style={{ animationDelay: '1.3s' }}></div>
             <div className={`${styles.rippleBase} ${styles.centerRipple}`} style={{ animationDelay: '2.6s' }}></div>
