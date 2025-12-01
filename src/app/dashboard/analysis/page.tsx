@@ -59,9 +59,38 @@ export default function AnalysisPage() {
             const data: AnalysisResultType = await response.json();
 
             // 5. Update State dengan Hasil Nyata
-            setAnalysisResult(data); 
+            setAnalysisResult(data);
             setStep('RESULT');
-            console.log("Analysis Result from API:", data); // <--- TAMBAHKAN INI
+            console.log("Analysis Result from API:", data);
+
+            // === TAMBAHAN: SIMPAN KE DATABASE (History) ===
+            try {
+            // Hitung total jerawat dari semua kategori
+            const totalPimpleCount = Object.values(data.counts).reduce((a, b) => a + b, 0);
+
+            // Gabungkan semua saran jadi satu string (atau pilih salah satu)
+            const recommendationText = data.expert_advice
+                .map(advice => `${advice.type}: ${advice.advice}`)
+                .join('\n');
+
+            await fetch('/api/analysis/save', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                imageUrl: data.image_result, // ini sudah base64, tapi tetap bisa disimpan sebagai string
+                pimpleCount: totalPimpleCount,
+                recommendations: recommendationText,
+                // confidence bisa ditambahin nanti kalau YOLO kasih skor
+                }),
+            });
+            console.log('Analysis berhasil disimpan ke riwayat!');
+            } catch (saveError) {
+            console.error('Gagal menyimpan ke history:', saveError);
+            // Tidak perlu error ke user, karena analisis tetap sukses
+            }
+            // === AKHIR TAMBAHAN ===
 
         } catch (e: any) {
             // Tangani error, tampilkan pesan

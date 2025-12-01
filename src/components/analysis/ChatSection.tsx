@@ -49,21 +49,21 @@ export default function ChatSection({ analysisResult }: ChatSectionProps) {
 
     useEffect(() => {
     if (analysisResult) {
-        let summaryText = "**Analysis Complete!** Here are the findings:\n\n";
+        let summaryText = "Analysis Complete! Here are the findings:\n\n";
 
         // 1. Ringkasan Deteksi
         const detectedIssues = Object.entries(analysisResult.counts)
             .filter(([_, count]) => count > 0)
             .map(([issue, count]) => `${issue} (${count})`);
         
-        summaryText += `**Detected:** ${detectedIssues.join(', ') || 'No major issues detected.'}\n\n`;
+        summaryText += `Detected: ${detectedIssues.join(', ') || 'No major issues detected.'}\n\n`;
 
         // 2. Tambahkan Saran Ahli (Expert Advice) - PASTIKAN BLOK INI ADA
         if (analysisResult.expert_advice && analysisResult.expert_advice.length > 0) {
             analysisResult.expert_advice.forEach((advice, index) => {
-                summaryText += `--- **Expert Advice for ${advice.type}** ---\n`;
-                summaryText += `**Treatment:** ${advice.treatment}\n`;
-                summaryText += `**Advice:** ${advice.advice}\n\n`;
+                summaryText += `--- Expert Advice for ${advice.type} ---\n`;
+                summaryText += `Treatment: ${advice.treatment}\n`;
+                summaryText += `Advice: ${advice.advice}\n\n`;
             });
         } else {
             summaryText += "No specific expert advice available for the detected conditions.\n\n";

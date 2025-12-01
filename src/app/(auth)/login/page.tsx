@@ -22,7 +22,6 @@ export default function LoginPage() {
 
         try {
             const response = await authService.login(formData);
-            await authService.setTokenCookie(response.token);
             login(response.user);
 
             router.replace('/dashboard');

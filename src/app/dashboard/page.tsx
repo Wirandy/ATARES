@@ -34,10 +34,10 @@ export default function ProfilePage() {
         }
     }, [user]);
 
-    const handleLogout = async () => {
-        await authService.logoutApi();
-        logout();
-        router.push('/login');
+    const handleLogout = () => {
+    authService.logout();        // cukup ini saja
+    logout();                    // ini dari useAuthStore (clear Zustand)
+    router.push('/login');
     };
 
     const handleEdit = () => {

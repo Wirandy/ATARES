@@ -41,25 +41,17 @@ model User {
 // Menyimpan hasil dari Face Detection (AI) dan Expert System.
 // --------------------------------------------------------------------
 model Analysis {
-  id            String         @id @default(cuid())
-  userId        String         // Foreign Key ke tabel User
-  user          User           @relation(fields: [userId], references: [id])
-  
-  status        AnalysisStatus @default(PENDING) // Status saat ini (menunggu, selesai, dll.)
-  imageUrl      String         // URL gambar yang diupload
-  
-  // Deteksi dan Rekomendasi
-  // Tipe 'Json?' adalah fitur PostgreSQL yang kuat untuk menyimpan data terstruktur (object/array)
-  detections    Json?          // Contoh: { spot_count: 5, wrinkle_severity: 'medium' }
-  recommendations Json?        // Contoh: { products: [...], steps: [...] }
-  
-  // Metrik Ringkasan (untuk tampilan History di frontend)
-  skinScore     Int?           
-  skinType      String?        
-  metrics       Json?          // { health, hydration, texture }
-  
-  createdAt     DateTime       @default(now())
-  completedAt   DateTime?
+  id          String   @id @default(cuid())
+  userId      String   // Relasi ke user
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageUrl    String   // URL foto yang di-upload (simpan ke public/uploads atau Cloudinary)
+  pimpleCount Int      // Jumlah jerawat terdeteksi
+  confidence  Float?   // Rata-rata confidence score dari YOLOv8
+  recommendations String? // Output expert system (JSON string atau text)
+  timestamp   DateTime @default(now())
+  notes       String?  // Catatan user (opsional)
+
+  @@map("analyses") // Nama table di DB
 }
 
 // --------------------------------------------------------------------

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { LoginCredentials } from '@/types/auth';
-import { SignJWT } from 'jose'; 
+import jwt from 'jsonwebtoken'; 
 import { cookies } from 'next/headers'; // <-- WAJIB: Untuk membaca token saat Analysis
 
 export async function POST(request: Request) {
@@ -128,19 +128,29 @@ export async function POST(request: Request) {
         const { passwordHash, ...userWithoutHash } = user;
         
         // 6. Buat JWT Token
-        const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-development');
-        
-        const token = await new SignJWT({ userId: user.id })
-            .setProtectedHeader({ alg: 'HS256' })
-            .setIssuedAt()
-            .setExpirationTime('7d')
-            .sign(JWT_SECRET);
+        const token = jwt.sign(
+        { userId: user.id },
+        process.env.JWT_SECRET || 'ini-rahasia-banget-ganti-dengan-yang-panjang-123',
+        { expiresIn: '7d' }
+        );
 
-        // 7. Kirim Respons Sukses (AuthResponse)
-        return NextResponse.json({
-            token,
+        // 7. Kirim Respons Sukses + SET COOKIE TOKEN (INI YANG KAMU KURANG!)
+        const response = NextResponse.json({
+            success: true,
+            token,                    // tetap kirim token (buat client kalau butuh)
             user: userWithoutHash
         }, { status: 200 });
+
+        // INI BARIS SAKTI YANG HARUS DITAMBAHKAN
+        response.cookies.set('token', token, {
+            httpOnly: true,                              // wajib! biar aman dari XSS
+            secure: process.env.NODE_ENV === 'production', // di local = false
+            sameSite: 'lax',                             // biar bisa redirect dari login
+            path: '/',                                   // PALING PENTING! biar semua halaman bisa baca
+            maxAge: 60 * 60 * 24 * 7                     // 7 hari
+        });
+
+        return response;
 
     } catch (error) {
         console.error("Login Handler Error (Orisinal):", error);
