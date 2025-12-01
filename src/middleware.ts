@@ -1,62 +1,56 @@
-// File: src/middleware.ts (FINAL FIX)
+// File: middleware.ts (NEXT.JS 16 + TURBOPACK COMPATIBLE — FIX 100%)
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose'; // <-- PERUBAHAN: Import dari JOSE
+import jwt from 'jsonwebtoken'; // GUNAKAN jsonwebtoken (bukan jose) → KOMPATIBEL TURBOPACK
 
-// Jalur yang ingin kita lindungi
 const protectedPaths = ['/dashboard'];
-// Jalur yang diizinkan tanpa token
-const publicPaths = ['/login', '/register', '/']; 
+const publicPaths = ['/login', '/register', '/'];
 
-// Next.js akan memproses ini di Edge Runtime
 export async function middleware(request: NextRequest) {
-    const token = request.cookies.get('token')?.value; 
-    const { pathname } = request.nextUrl;
-    let isAuthenticated = false;
+  const token = request.cookies.get('token')?.value;
+  const { pathname } = request.nextUrl;
 
-    // 1. Verifikasi Status Otentikasi (Cek Token)
-    if (token) {
-        try {
-            const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key');
-            
-            // Verifikasi menggunakan JOSE (Edge Compatible)
-            await jwtVerify(token, JWT_SECRET); 
-            isAuthenticated = true;
-        } catch (error) {
-            // Token kadaluarsa/tidak valid: Lanjutkan sebagai unauthenticated
-            // console.error("JWT Verification failed in middleware");
-        }
-    }
+  let isAuthenticated = false;
 
-    // 2. LOGIKA REDIRECT
-    
-    // A) Jika user belum terotentikasi dan mencoba mengakses jalur terproteksi:
-    if (!isAuthenticated && protectedPaths.some(path => pathname.startsWith(path))) {
-        // Redirect paksa ke /login
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        return NextResponse.redirect(url);
+  // Verifikasi token dengan jsonwebtoken (kompatibel Turbopack)
+  if (token) {
+    try {
+      jwt.verify(token, process.env.JWT_SECRET || 'ini-rahasia-banget-ganti-dengan-yang-panjang');
+      isAuthenticated = true;
+    } catch (error) {
+      // Token invalid atau expired → anggap guest
+      isAuthenticated = false;
     }
+  }
 
-    // B) Jika user sudah terotentikasi dan mencoba mengakses jalur publik (/login, /register):
-    if (isAuthenticated && publicPaths.includes(pathname)) {
-        // Redirect ke dashboard
-        const url = request.nextUrl.clone();
-        url.pathname = '/dashboard';
-        return NextResponse.redirect(url);
-    }
-    
-    // Default: Biarkan request berlanjut
-    return NextResponse.next();
+  // 1. Kalau belum login & masuk ke /dashboard → redirect ke login
+  if (!isAuthenticated && protectedPaths.some(path => pathname.startsWith(path))) {
+    const url = new URL('/login', request.url);
+    return NextResponse.redirect(url);
+  }
+
+  // 2. Kalau sudah login & masuk ke /login atau /register → redirect ke dashboard
+  if (isAuthenticated && publicPaths.includes(pathname)) {
+    const url = new URL('/dashboard', request.url);
+    return NextResponse.redirect(url);
+  }
+
+  // Kalau sudah login & buka home (/) → redirect ke dashboard
+  if (isAuthenticated && pathname === '/') {
+    const url = new URL('/dashboard', request.url);
+    return NextResponse.redirect(url);
+  }
+
+  // Selain itu → lanjutkan
+  return NextResponse.next();
 }
 
-// Konfigurasi Matcher
 export const config = {
-    matcher: [
-        '/dashboard/:path*', // Lindungi semua di bawah /dashboard
-        '/',
-        '/login',
-        '/register',
-    ], 
+  matcher: [
+    '/',
+    '/dashboard/:path*',
+    '/login',
+    '/register',
+  ],
 };

@@ -22,8 +22,7 @@ export default function LoginPage() {
 
         try {
             const response = await authService.login(formData);
-            login(response.user);
-
+            login(response.user);           // simpan ke Zustand
             router.replace('/dashboard');
 
         } catch (err: any) {

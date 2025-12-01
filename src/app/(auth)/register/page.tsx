@@ -27,7 +27,6 @@ export default function RegisterPage() {
 
         try {
             const response = await authService.register(formData);
-            await authService.setTokenCookie(response.token);
             login(response.user);
 
             router.push('/dashboard');

@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import styles from './Profile.module.css';
-import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
-import router from 'next/router';
+import styles from './Profile.module.css';
+import { useRouter } from 'next/navigation';  // PAKAI INI SAJA
+// import router from 'next/router';      HAPUS BARIS INI TOTAL!
 
 export default function ProfilePage() {
     const { user, logout } = useAuthStore();
-    const router = useRouter();
+    const router = useRouter();  // ← Ini yang benar
     const [isEditing, setIsEditing] = useState(false);
 
     // Dummy data if user is not logged in (for preview)
@@ -35,10 +35,10 @@ export default function ProfilePage() {
     }, [user]);
 
     const handleLogout = () => {
-    authService.logout();        // cukup ini saja
-    logout();                    // ini dari useAuthStore (clear Zustand)
-    router.push('/login');
-    };
+        authService.logout();
+        logout(); // clear Zustand
+        router.push('/login'); // ← Sekarang pakai router yang benar!
+    }
 
     const handleEdit = () => {
         setIsEditing(true);
