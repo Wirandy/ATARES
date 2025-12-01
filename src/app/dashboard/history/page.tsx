@@ -64,12 +64,22 @@ export default function HistoryPage() {
 
     return (
         <div className={styles.container}>
+            {/* Ripple animations */}
+            <div className={`${styles.rippleBase} ${styles.centerRipple}`} style={{ animationDelay: '0s' }}></div>
+            <div className={`${styles.rippleBase} ${styles.centerRipple}`} style={{ animationDelay: '1.3s' }}></div>
+            <div className={`${styles.rippleBase} ${styles.centerRipple}`} style={{ animationDelay: '2.6s' }}></div>
+
+            <div className={`${styles.rippleBase} ${styles.cornerRipple1}`} style={{ animationDelay: '0.5s' }}></div>
+            <div className={`${styles.rippleBase} ${styles.cornerRipple1}`} style={{ animationDelay: '3s' }}></div>
+
+            <div className={`${styles.rippleBase} ${styles.cornerRipple2}`} style={{ animationDelay: '1s' }}></div>
+            <div className={`${styles.rippleBase} ${styles.cornerRipple2}`} style={{ animationDelay: '4s' }}></div>
+
             <div className={styles.header}>
                 <h1 className={styles.title}>Analysis History</h1>
                 <p className={styles.subtitle}>Track your skin health progress over time</p>
             </div>
 
-            {/* Stats Grid */}
             <div className={styles.statsGrid}>
                 <div className={styles.statsCard}>
                     <div className={styles.statsInfo}>

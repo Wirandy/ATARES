@@ -38,11 +38,11 @@ export default function AnalysisPage() {
         try {
             // 2. Siapkan FormData untuk API Call
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('file', file);  // Match FastAPI
             formData.append('action', 'analysis'); 
             
             // 3. Panggil API Next.js di /api/auth/login
-            const response = await fetch('/api/auth/login', { 
+            const response = await fetch('http://localhost:8000/detect', { // AI SERVER 
                 method: 'POST',
                 body: formData,
             });
@@ -130,7 +130,7 @@ export default function AnalysisPage() {
                         <div className={`glass-panel ${styles.resultState}`}>
                             {/* Teks "Analysis Result with Detections" BISA DITAMBAHKAN DI SINI jika memang bagian dari UI */}   
                             <img 
-                                src={`data:image/jpeg;base64,${analysisResult.image_result}`} 
+                                src={analysisResult.image_result} // ✅ DIRECTLY USE base64 string (sudah lengkap) 
                                 alt="Analysis Result with Detections" 
                                 className={styles.resultImage} 
                             />   

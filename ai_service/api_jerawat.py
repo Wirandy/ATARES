@@ -53,7 +53,7 @@ async def detect_pimple(file: UploadFile = File(...)):
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         # 1. DETEKSI (YOLO)
-        results = model(img, conf=0.15, augment=True)
+        results = model(img, conf=0.05, augment=True)
         
         jerawat_data = {} # Hitung jumlah: {'whitehead': 2, 'acne': 1}
         img_hasil = img.copy()

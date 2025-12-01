@@ -25,7 +25,7 @@ export default function LoginPage() {
             await authService.setTokenCookie(response.token);
             login(response.user);
 
-            router.replace('/dashboard'); 
+            router.replace('/dashboard');
 
         } catch (err: any) {
             // HANYA dipanggil jika Login GAGAL
@@ -37,6 +37,11 @@ export default function LoginPage() {
 
     return (
         <div className={styles.container}>
+            {/* Ripple Elements */}
+            <div className={`${styles.rippleBase} ${styles.centerRipple}`}></div>
+            <div className={`${styles.rippleBase} ${styles.cornerRipple1}`}></div>
+            <div className={`${styles.rippleBase} ${styles.cornerRipple2}`}></div>
+
             <div className={`glass-panel ${styles.card}`}>
                 <div className={styles.header}>
                     <h1 className={styles.title}>Welcome Back</h1>
