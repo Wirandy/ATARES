@@ -48,7 +48,7 @@ def enhance_image(image):
 def home():
     return {"service": "Pimple Detection + Expert System", "status": "Online"}
 
-@app.post("/detect")
+@app.post("/analyze")
 async def detect_pimple(file: UploadFile = File(...)):
     try:
         contents = await file.read()
