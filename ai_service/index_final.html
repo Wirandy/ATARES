@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem AI Terintegrasi (Login + Diagnosa)</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        
+        .container { max-width: 800px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        h1 { color: #4CAF50; margin-bottom: 5px; }
+        p { color: #aaa; font-size: 14px; margin-bottom: 20px; }
+
+        /* INPUT AREA */
+        .input-group { margin-bottom: 20px; }
+        input { padding: 12px; width: 60%; border-radius: 5px; border: 1px solid #444; background: #333; color: white; font-size: 16px; }
+        
+        /* TOMBOL */
+        .btn-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 14px; }
+        .btn-daftar { background: #2196F3; color: white; }
+        .btn-login { background: #FF9800; color: white; }
+        .btn-scan { background: #4CAF50; color: white; width: 100%; font-size: 18px; margin-top: 10px; }
+        button:hover { opacity: 0.8; transform: scale(1.05); }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        /* KAMERA */
+        .camera-wrapper { 
+            position: relative; width: 100%; max-width: 480px; height: 360px; 
+            margin: 0 auto; background: black; border-radius: 10px; overflow: hidden; border: 2px solid #444;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); } /* Mirror Effect */
+
+        /* HASIL */
+        #hasil-area { display: none; margin-top: 20px; padding: 15px; background: #252525; border-radius: 10px; border: 1px solid #444; text-align: left; }
+        #imgHasil { width: 100%; border-radius: 10px; display: block; margin-bottom: 10px; transform: scaleX(1); } /* Gambar hasil Normal */
+        pre { background: #000; padding: 10px; overflow-x: auto; color: #0f0; border-radius: 5px; }
+        
+        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 5px; font-weight: bold; margin-bottom: 10px;}
+        .success { background: #4CAF50; color: black; }
+        .error { background: #F44336; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🤖 AI Face & Skin System</h1>
+    <p>Microservices Demo: Port 8000 (Auth) & Port 8001 (YOLO)</p>
+
+    <div class="input-group">
+        <input type="text" id="username" placeholder="Masukkan Username (Contoh: moses)">
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-daftar" onclick="setMode('signup')">📝 1. DAFTAR WAJAH</button>
+        <button class="btn-login" onclick="setMode('login')">🔐 2. LOGIN & CEK</button>
+    </div>
+
+    <div id="camera-section" style="display:none;">
+        <div class="camera-wrapper">
+            <video id="video" autoplay playsinline></video>
+        </div>
+        <button class="btn-scan" onclick="prosesAI()">📸 AMBIL FOTO</button>
+    </div>
+
+    <div id="hasil-area">
+        <div id="statusLabel" class="status-badge">Processing...</div>
+        <img id="imgHasil" alt="Hasil Scan">
+        <div id="textReport"></div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    let currentMode = ''; // 'signup' atau 'login'
+
+    // 1. SETUP KAMERA
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+            video.srcObject = stream;
+        } catch (err) { alert("Gagal akses kamera: " + err); }
+    }
+
+    function setMode(mode) {
+        if(!document.getElementById('username').value) { alert("Isi username dulu!"); return; }
+        currentMode = mode;
+        document.getElementById('camera-section').style.display = 'block';
+        document.getElementById('hasil-area').style.display = 'none';
+        startCamera();
+    }
+
+    // 2. LOGIC PROSES (JANTUNG APLIKASI)
+    async function prosesAI() {
+        const user = document.getElementById('username').value;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        canvas.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append("username", user);
+            formData.append("file", blob, "capture.jpg");
+
+            // UI Loading
+            document.getElementById('camera-section').style.display = 'none';
+            const resArea = document.getElementById('hasil-area');
+            const label = document.getElementById('statusLabel');
+            const img = document.getElementById('imgHasil');
+            const txt = document.getElementById('textReport');
+            
+            resArea.style.display = 'block';
+            label.className = 'status-badge';
+            label.style.background = '#999';
+            label.innerText = "⏳ Sedang Menghubungi Server...";
+            img.style.display = 'none';
+            txt.innerHTML = "";
+
+            try {
+                // --- ALUR 1: SIGN UP (DAFTAR) ---
+                if (currentMode === 'signup') {
+                    const response = await fetch("http://127.0.0.1:8000/signup", { method: "POST", body: formData });
+                    const data = await response.json();
+                    
+                    if(data.status === 'success') {
+                        label.className = 'status-badge success';
+                        label.innerText = "✅ PENDAFTARAN BERHASIL";
+                        txt.innerHTML = `<p>User <b>${user}</b> telah tersimpan di database.</p>`;
+                    } else {
+                        throw new Error(data.message || "Gagal Daftar");
+                    }
+                } 
+                
+                // --- ALUR 2: LOGIN + DIAGNOSA (CHAINING) ---
+                else if (currentMode === 'login') {
+                    // A. Cek Login dulu ke Port 8000
+                    label.innerText = "🔐 Verifikasi Wajah...";
+                    const resLogin = await fetch("http://127.0.0.1:8000/login", { method: "POST", body: formData });
+                    const dataLogin = await resLogin.json();
+
+                    if(dataLogin.status !== 'success') {
+                        label.className = 'status-badge error';
+                        label.innerText = "❌ LOGIN DITOLAK: " + dataLogin.message;
+                        return; // Stop kalau login gagal
+                    }
+
+                    // B. Kalau Login Sukses, Lanjut ke Port 8001 (Jerawat)
+                    label.innerText = "✅ Login OK! Menganalisa Kulit...";
+                    label.style.background = "#2196F3"; // Biru loading
+
+                    // Kirim ulang gambar yang sama ke API Jerawat
+                    const formJerawat = new FormData();
+                    formJerawat.append("file", blob, "scan.jpg");
+
+                    const resDeteksi = await fetch("http://127.0.0.1:8001/detect", { method: "POST", body: formJerawat });
+                    const dataDeteksi = await resDeteksi.json();
+
+                    // C. Tampilkan Hasil Akhir
+                    label.className = 'status-badge success';
+                    label.innerText = "✅ DIAGNOSA SELESAI";
+                    
+                    if(dataDeteksi.image_result) {
+                        img.src = dataDeteksi.image_result;
+                        img.style.display = 'block';
+                    }
+
+                    // Format Laporan
+                    let reportHTML = `<h3>Halo, ${user}!</h3>`;
+                    reportHTML += `<p><b>Skor Kecocokan Wajah:</b> ${dataLogin.score.toFixed(4)}</p>`;
+                    reportHTML += "<hr style='border-color:#444'>";
+                    
+                    if(dataDeteksi.expert_advice && dataDeteksi.expert_advice.length > 0) {
+                        dataDeteksi.expert_advice.forEach(adv => {
+                            reportHTML += `<div style="background:#333; padding:10px; margin-bottom:10px; border-left:4px solid #4CAF50;">
+                                <strong>Tipe: ${adv.type.toUpperCase()}</strong><br>
+                                💊 <i>Treatment:</i> ${adv.treatment}<br>
+                                💡 <i>Saran:</i> ${adv.advice}
+                            </div>`;
+                        });
+                    } else {
+                        reportHTML += "<p>Kulit tampak bersih. Tetap jaga kebersihan wajah!</p>";
+                    }
+                    
+                    txt.innerHTML = reportHTML;
+                }
+
+            } catch (err) {
+                label.className = 'status-badge error';
+                label.innerText = "⚠️ ERROR SYSTEM";
+                txt.innerText = err.message;
+            }
+        }, 'image/jpeg');
+    }
+</script>
+
+</body>
+</html>
