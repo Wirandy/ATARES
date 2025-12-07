@@ -4,12 +4,11 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 import base64
+import mediapipe as mp
 from contextlib import asynccontextmanager
-
-# --- IMPORT LOGIKA ARKA ---
 from expert_logic import load_knowledge_base, get_advice
 
-# Fungsi biar Excel diload pas Server nyala
+# Load Knowledge Base
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_knowledge_base() 
@@ -17,36 +16,46 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Setup CORS
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
 
-# Load Model YOLO (Pastikan file best.pt kamu sudah yang paling pinter/train3)
-path_model = 'runs/detect/train2/weights/best.pt'
+# LOAD MODEL (Pastikan path benar)
+path_model = 'runs/detect/train3/weights/best.pt' 
 model = YOLO(path_model)
 
-# --- FUNGSI BANTUAN ---
+# SETUP MEDIAPIPE
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp_face_mesh.FaceMesh(
+    static_image_mode=True, max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.5
+)
 
 def image_to_base64(image):
     _, buffer = cv2.imencode('.jpg', image)
-    img_str = base64.b64encode(buffer).decode('utf-8')
-    return f"data:image/jpeg;base64,{img_str}"
+    return f"data:image/jpeg;base64,{base64.b64encode(buffer).decode('utf-8')}"
 
-# FUNGSI BARU: PENAJAM CITRA (MATA KUCING)
-# Biar webcam burik jadi jelas di mata AI
+# 1. ENHANCE IMAGE
 def enhance_image(image):
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    cl = clahe.apply(l)
-    limg = cv2.merge((cl,a,b))
-    final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-    return final
+    limg = cv2.merge((clahe.apply(l),a,b))
+    return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
-@app.get("/")
-def home():
-    return {"service": "Pimple Detection + Expert System", "status": "Online"}
+# 2. MASKING (Tutup Mata & Mulut)
+def apply_masking(image, landmarks, h, w):
+    img_masked = image.copy()
+    
+    indices_list = [
+        [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398], # Mata Kiri
+        [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246],    # Mata Kanan
+        [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146] # Mulut
+    ]
+
+    for indices in indices_list:
+        pts = np.array([(int(landmarks[i].x * w), int(landmarks[i].y * h)) for i in indices])
+        cv2.fillConvexPoly(img_masked, pts, (180, 180, 180)) # Warna Abu-abu
+    return img_masked
 
 @app.post("/detect")
 async def detect_pimple(file: UploadFile = File(...)):
@@ -54,65 +63,68 @@ async def detect_pimple(file: UploadFile = File(...)):
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        img = cv2.flip(img, 1) # Mirror
 
-        # 1. FLIP GAMBAR (Biar kayak bercermin dan teks gak kebalik)
-        img = cv2.flip(img, 1) 
+        # A. CARI WAJAH DULU PAKAI MEDIAPIPE
+        rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb_image)
 
-        # 2. PERJELAS GAMBAR (Untuk dilihat AI)
-        # Kita pakai gambar yg dipertajam buat deteksi, tapi gambar asli buat ditampilkan
-        img_ai = enhance_image(img)
+        # Kalau gak ada wajah, balikan gambar asli (biar gak error)
+        if not results.multi_face_landmarks:
+            return {"status": "success", "counts": {}, "expert_advice": ["Wajah tidak terdeteksi jelas"], "image_result": image_to_base64(img)}
 
-        # 3. JALANKAN YOLO (Settingan Sweet Spot)
-        # Pakai img_ai (tajam)
-        results = model(img_ai, conf=0.15, iou=0.5, augment=True)
+        landmarks = results.multi_face_landmarks[0].landmark
+        h, w, _ = img.shape
+
+        # B. HITUNG KOORDINAT CROP (POTONG WAJAH)
+        x_coords = [int(l.x * w) for l in landmarks]
+        y_coords = [int(l.y * h) for l in landmarks]
+        
+        # Tambah margin (padding) biar dagu/jidat gak kepotong pas
+        padding = 50 
+        min_x = max(0, min(x_coords) - padding)
+        max_x = min(w, max(x_coords) + padding)
+        min_y = max(0, min(y_coords) - padding)
+        max_y = min(h, max(y_coords) + padding)
+
+        # C. PROSES AI PADA GAMBAR ASLI DULU (MASKING MATA)
+        # Kita masking dulu sebelum crop, biar koordinatnya akurat
+        img_enhanced = enhance_image(img)
+        img_masked = apply_masking(img_enhanced, landmarks, h, w)
+
+        # D. LAKUKAN CROPPING
+        # Kita potong gambar yang sudah dimasker (buat AI)
+        # Dan potong gambar asli (buat ditampilkan ke user)
+        face_img_ai = img_masked[min_y:max_y, min_x:max_x]
+        face_img_display = img[min_y:max_y, min_x:max_x] # Gambar bersih tapi terpotong
+
+        # E. JALANKAN YOLO (Hanya pada area wajah yang sudah dipotong)
+        results_yolo = model(face_img_ai, conf=0.15, iou=0.5, augment=True)
         
         jerawat_data = {}
-        img_hasil = img.copy() # Kita gambar kotak di foto asli yang natural
+        img_hasil = face_img_display.copy()
+        
+        # Ukuran jerawat maksimal relatif terhadap wajah yang dicrop
+        h_crop, w_crop, _ = img_hasil.shape
+        max_size = w_crop * 0.15 
 
-        # Hitung batas ukuran maksimal jerawat (misal 15% lebar layar)
-        # Kalau lebih gede dari ini, kemungkinan itu hidung/mulut
-        height, width, _ = img.shape
-        max_pimple_size = width * 0.15 
-
-        for result in results:
+        for result in results_yolo:
             for box in result.boxes:
-                # Ambil koordinat kotak
                 x1, y1, x2, y2 = box.xyxy[0]
-                box_w = x2 - x1
-                box_h = y2 - y1
-                
-                # --- LOGIC FILTER (BIAR GAK HALU) ---
-                # Kalau kotaknya raksasa, skip aja
-                if box_w > max_pimple_size or box_h > max_pimple_size:
-                    continue 
+                if (x2-x1) > max_size or (y2-y1) > max_size: continue 
 
-                # Ambil Data
                 cls_id = int(box.cls[0])
                 nama = model.names[cls_id]
                 conf = float(box.conf[0])
-                
-                # Masukkan ke Data Statistik
                 jerawat_data[nama] = jerawat_data.get(nama, 0) + 1
                 
-                # Gambar Kotak Merah Manual & Teks
                 cv2.rectangle(img_hasil, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
-                cv2.putText(img_hasil, f"{nama} {conf:.2f}", (int(x1), int(y1)-10), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                cv2.putText(img_hasil, f"{nama}", (int(x1), int(y1)-5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
         
-        # 4. MINTA SARAN (EXPERT SYSTEM ARKA)
-        rekomendasi_list = []
-        for jenis_jerawat in jerawat_data.keys():
-            saran = get_advice(jenis_jerawat)
-            rekomendasi_list.append(saran)
+        rekomendasi = [get_advice(j) for j in jerawat_data.keys()]
 
-        gambar_output = image_to_base64(img_hasil)
-
-        return {
-            "status": "success",
-            "counts": jerawat_data,       # Data Statistik
-            "expert_advice": rekomendasi_list, # Data Saran Pengobatan (Punya Arka)
-            "image_result": gambar_output
-        }
+        # F. Return Gambar yang sudah di-CROP
+        return {"status": "success", "counts": jerawat_data, "expert_advice": rekomendasi, "image_result": image_to_base64(img_hasil)}
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
