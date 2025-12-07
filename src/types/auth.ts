@@ -1,12 +1,20 @@
 export interface User {
-    id: string;
+    id: number;
     email: string;
     name: string;
+    passwordHash?: string;
 }
 
 export interface AuthResponse {
     token: string;
     user: User;
+}
+
+export interface LoginResponse {
+    success: boolean;
+    token: string;
+    user: User;
+    redirectTo?: string;
 }
 
 export interface LoginCredentials {
@@ -15,8 +23,8 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials {
-  name: string;
-  email: string;
-  phoneNumber: string;  // ✅ TAMBAH INI
-  password: string;
+    name: string;
+    email: string;
+    phoneNumber: string;  // ✅ TAMBAH INI
+    password: string;
 }

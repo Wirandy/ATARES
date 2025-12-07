@@ -1,36 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; 
 import Input from '@/components/ui/Input';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import styles from './Login.module.css';
+import { LoginResponse } from '@/types/auth'; // <--- Import tipe LoginResponse
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams(); 
     const login = useAuthStore((state) => state.login);
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // Dapatkan path redirect dari URL, default ke /dashboard
+    const redirectPath = searchParams.get('redirect') || '/dashboard';
+
+    useEffect(() => {
+        // Cek apakah user sudah login di client-side state
+        if (useAuthStore.getState().user) {
+            router.replace(redirectPath);
+        }
+    }, [router, redirectPath]);
+    
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            const response = await authService.login(formData);
-            login(response.user);           // simpan ke Zustand
-            router.replace('/dashboard');
+            // Kita tentukan tipe response sebagai LoginResponse agar TypeScript senang
+            const response: LoginResponse = await authService.login(formData); 
+            
+            // Simpan user ke authStore
+            // PERHATIKAN: Jika authStore masih error tipe data, kita perbaiki di langkah selanjutnya
+            login(response.user);
+            
+            // 1. Ambil redirect path dari response API, jika tidak ada, pakai path dari URL.
+            const finalRedirect = response.redirectTo || redirectPath; 
+
+            // 2. Navigasi
+            router.replace(finalRedirect);
 
         } catch (err: any) {
-            // HANYA dipanggil jika Login GAGAL
-            setError(err.response?.data?.message || 'Login failed. Please try again.');
-            setLoading(false); // <-- RESET LOADING HANYA DI SINI
+            // Tangani error dengan aman
+            const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
+            setError(errorMessage);
+            setLoading(false);
         }
-        // JANGAN ADA BLOK FINALLY DI SINI
     };
 
     return (
