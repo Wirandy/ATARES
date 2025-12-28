@@ -37,7 +37,7 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-# 🚀 BACKEND SETUP & SECURITY 
+# BACKEND SETUP & SECURITY 
 Project ini menggunakan **Next.js Route Handlers** untuk semua logika backend, dengan **Prisma** sebagai ORM dan **PostgreSQL** sebagai database.
 
 # Database Connection (Wajib)
